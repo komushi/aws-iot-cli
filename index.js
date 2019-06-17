@@ -51,6 +51,14 @@ const createUploadJob = `mutation CreateUploadJob($input: CreateUploadJob!) {
 }
 `;
 
+const getPutObjectSignedUrl = `query GetPutObjectSignedUrl($bucket: String!, $objKey: String!) {
+  getPutObjectSignedUrl(bucket: $bucket, objKey: $objKey) {
+    url
+  }
+}
+`;
+
+
 const proceedAuth = async () => {
 	const Auth = Amplify.Auth;
 	const rtn = await Auth.signIn(username, password).catch((err) => {
@@ -78,23 +86,40 @@ const loadAuthenticationInfo = async() => {
 	// console.log('currentAuthenticatedUser', JSON.stringify(currentAuthenticatedUser));
 	console.log('currentUserInfo', JSON.stringify(currentUserInfo));
 
-	return currentUserInfo
+	return currentUserInfo;
 
 }
 
-const invokeAppsync = async (currentUserInfo) => {
+const getPresignedUrl = async(currentUserInfo) => {
 
 	const API = Amplify.API;
 	const graphqlOperation = Amplify.graphqlOperation;
 	const uid = new ShortUniqueId();
 
-	const fileKey = uid.randomUUID(6)
+	const fileKey = uid.randomUUID(6);
+	const objKey = `protected/${currentUserInfo.attributes['custom:identity_id']}/${fileKey}`;
+	const bucket = aws_exports.aws_user_files_s3_bucket;
+
+    const rtn = await API.graphql(graphqlOperation(getPutObjectSignedUrl, { bucket, objKey }))
+      .catch(e => {
+        // console.error('createUploadJob', e);
+        throw e;
+      });
+
+  	console.log('getPresignedUrl rtn', rtn);
+  	return { objKey, fileKey, fileName: 'temp.file1', user: currentUserInfo.username };
+}
+
+const saveUploadJob = async ({objKey, fileKey, fileName, user}) => {
+
+	const API = Amplify.API;
+	const graphqlOperation = Amplify.graphqlOperation;
 
 	const input = {
-	    user: currentUserInfo.username,
-	    objKey: `protected/${currentUserInfo.attributes['custom:identity_id']}/${fileKey}`,
-	    fileKey: fileKey,
-	    fileName: 'original.file',
+	    user,
+	    objKey,
+	    fileKey,
+	    fileName,
 	    status: 'Done',
 	    uploadedOn: new Date().toISOString()
 	};
@@ -107,11 +132,11 @@ const invokeAppsync = async (currentUserInfo) => {
         throw e;
       });
 
-  	console.log('proceedAppsync rtn', rtn);
+  	console.log('saveUploadJob rtn', rtn);
   	return { fileKey, data: rtn };
 }
 
-const saveFile = async ({fileKey, data}, fileContentType = "binary/octet-stream", s3level = "protected") => {
+const uploadFile = async ({fileKey, data}, fileContentType = "binary/octet-stream", s3level = "protected") => {
 
     await Amplify.Storage.put(
     	fileKey, 
@@ -127,7 +152,8 @@ const saveFile = async ({fileKey, data}, fileContentType = "binary/octet-stream"
 
 proceedAuth()
 	.then(loadAuthenticationInfo)
-	.then(invokeAppsync)
-	// .then(saveFile)
+	.then(getPresignedUrl)
+	.then(saveUploadJob)
+	// .then(uploadFile)
 	.catch(e => console.error(e));
 
