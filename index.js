@@ -1,4 +1,4 @@
-const username = 'xu';
+const username = 'xulei';
 const password = 'pa55word';
 const filePath = '/screenshot.png';
 
@@ -102,7 +102,8 @@ const uploadWithSignedUrl = async(currentUserInfo) => {
 	const uid = new ShortUniqueId();
 
 	const fileKey = uid.randomUUID(6);
-	const objKey = `protected/${currentUserInfo.attributes['custom:identity_id']}/${fileKey}`;
+	// const objKey = `protected/${currentUserInfo.attributes['custom:identity_id']}/${fileKey}`;
+	const objKey = `protected/${currentUserInfo.attributes['profile']}/${fileKey}`;
 	const bucket = aws_exports.aws_user_files_s3_bucket;
 
     const fileContents = fs.readFileSync(__dirname + filePath);
