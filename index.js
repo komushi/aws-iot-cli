@@ -17,28 +17,28 @@ global.navigator = {};
 Amplify.default.configure(aws_exports);
 Amplify.Storage.configure({ level: 'protected' });
 
-/*
-Amplify.default.configure({
-    Auth: {
-        identityPoolId: aws_exports.aws_cognito_identity_pool_id,
-        region: aws_exports.aws_cognito_region,
-        userPoolId: aws_exports.aws_user_pools_id,
-        userPoolWebClientId: aws_exports.aws_user_pools_web_client_id,
-    },
-	aws_appsync_graphqlEndpoint: aws_exports.aws_appsync_graphqlEndpoint,
-	aws_appsync_region: aws_exports.aws_appsync_region,
-	aws_appsync_authenticationType: aws_exports.aws_appsync_authenticationType,
-	aws_appsync_apiKey: aws_exports.aws_appsync_apiKey,
-    Storage: {
-        AWSS3: {
-            bucket: aws_exports.aws_user_files_s3_bucket,
-            region: aws_exports.aws_user_files_s3_bucket_region
-        }
-    }
-});
 
-Amplify.Storage.configure({ level: 'protected' });
-*/
+// Amplify.default.configure({
+//     Auth: {
+//         identityPoolId: aws_exports.aws_cognito_identity_pool_id,
+//         region: aws_exports.aws_cognito_region,
+//         userPoolId: aws_exports.aws_user_pools_id,
+//         userPoolWebClientId: aws_exports.aws_user_pools_web_client_id,
+//     },
+// 	aws_appsync_graphqlEndpoint: aws_exports.aws_appsync_graphqlEndpoint,
+// 	aws_appsync_region: aws_exports.aws_appsync_region,
+// 	aws_appsync_authenticationType: aws_exports.aws_appsync_authenticationType,
+// 	aws_appsync_apiKey: aws_exports.aws_appsync_apiKey,
+//     Storage: {
+//         AWSS3: {
+//             bucket: aws_exports.aws_user_files_s3_bucket,
+//             region: aws_exports.aws_user_files_s3_bucket_region
+//         }
+//     }
+// });
+
+// Amplify.Storage.configure({ level: 'protected' });
+
 
 
 const createUploadJob = `mutation CreateUploadJob($input: CreateUploadJob!) {
@@ -85,7 +85,7 @@ const loadAuthenticationInfo = async() => {
 	    Auth.currentUserInfo(),
 	  ]);
 
-	// console.log('currentAuthenticatedUser', JSON.stringify(currentAuthenticatedUser));
+	console.log('currentAuthenticatedUser', JSON.stringify(currentAuthenticatedUser));
 	
 	console.log('***** Begin currentUserInfo *****');
 	console.log(JSON.stringify(currentUserInfo));
