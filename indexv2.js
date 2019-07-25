@@ -1,6 +1,6 @@
 const username = 'xulei';
 const password = 'pa55word';
-const filePath = '/screenshot.png';
+const filePath = '/iot.mp4';
 
 // require('isomorphic-fetch');
 const aws_exports = require('./aws-exports').getConfig();
@@ -8,39 +8,13 @@ const Amplify = require('aws-amplify');
 const AWS = require('aws-sdk');
 const ShortUniqueId = require('short-unique-id');
 const fs = require('fs');
-const zlib = require('zlib');
-
 
 global.fetch = require('node-fetch');
 global.navigator = {};
 
 
 Amplify.default.configure(aws_exports);
-Amplify.Storage.configure({ level: 'protected' });
-
-
-// Amplify.default.configure({
-//     Auth: {
-//         identityPoolId: aws_exports.aws_cognito_identity_pool_id,
-//         region: aws_exports.aws_cognito_region,
-//         userPoolId: aws_exports.aws_user_pools_id,
-//         userPoolWebClientId: aws_exports.aws_user_pools_web_client_id,
-//     },
-// 	aws_appsync_graphqlEndpoint: aws_exports.aws_appsync_graphqlEndpoint,
-// 	aws_appsync_region: aws_exports.aws_appsync_region,
-// 	aws_appsync_authenticationType: aws_exports.aws_appsync_authenticationType,
-// 	aws_appsync_apiKey: aws_exports.aws_appsync_apiKey,
-//     Storage: {
-//         AWSS3: {
-//             bucket: aws_exports.aws_user_files_s3_bucket,
-//             region: aws_exports.aws_user_files_s3_bucket_region
-//         }
-//     }
-// });
-
 // Amplify.Storage.configure({ level: 'protected' });
-
-
 
 const createUploadJob = `mutation CreateUploadJob($input: CreateUploadJob!) {
   createUploadJob(input: $input) {
@@ -70,21 +44,15 @@ const checkCredentials = async () => {
 	});
 }
 
-const proceedAuth = async () => {
+
+const initiateCognitoAuth = async() => {
 
 	const Auth = Amplify.Auth;
-	const rtn = await Auth.signIn(username, password).catch((err) => {
+
+	await Auth.signIn(username, password).catch((err) => {
 	  // console.log(err);
 	  throw err;
 	});
-
-	// console.log('proceedAuth rtn', rtn);
-	return rtn;
-}
-
-const loadAuthenticationInfo = async() => {
-
-	const Auth = Amplify.Auth;
 
 	const [
 	  // currentAuthenticatedUser,
@@ -99,6 +67,11 @@ const loadAuthenticationInfo = async() => {
 
 	// console.log('currentAuthenticatedUser', JSON.stringify(currentAuthenticatedUser));
 	// console.log('currentUserCredentials', JSON.stringify(currentUserCredentials));
+
+	// console.log('identity_id', currentUserCredentials.params.IdentityId);
+	// console.log('identity_id', currentUserCredentials.data.IdentityId);
+	// console.log('identity_id', currentUserCredentials._identityId);
+	console.log('identity_id', currentUserCredentials.identityId);
 	
 	console.log('***** Begin currentUserInfo *****');
 	console.log(JSON.stringify(currentUserInfo));
@@ -109,26 +82,24 @@ const loadAuthenticationInfo = async() => {
 	});
 
 
-	return {currentUserInfo, currentUserCredentials};
+	return {username: currentUserInfo.username, identityId: currentUserCredentials.identityId};
 
 }
 
-const multiUpload = async({currentUserInfo, currentUserCredentials}) => {
+const multiUpload = async({username, identityId}) => {
 
 	const graphqlOperation = Amplify.graphqlOperation;
 	const uid = new ShortUniqueId();
 
 	const fileKey = uid.randomUUID(6);
-	// const objKey = `protected/${currentUserInfo.attributes['custom:identity_id']}/${fileKey}`;
-	const objKey = `protected/${currentUserInfo.attributes['profile']}/${fileKey}`;
+	const objKey = `protected/${identityId}/${fileKey}`;
 	const bucket = aws_exports.aws_user_files_s3_bucket;
 
-	// const fileStream = fs.createReadStream(__dirname + filePath).pipe(zlib.createGzip());
     const fileStream = fs.createReadStream(__dirname + filePath);
    
 
 	const params = {Bucket: bucket, Key: objKey, Body: fileStream};
-	const options = {partSize: 10 * 1024 * 1024, queueSize: 1};
+	const options = {partSize: 10 * 1024 * 1024, queueSize: 10};
 
 	const s3 = new AWS.S3({apiVersion: '2006-03-01'});
 	const s3upload = s3.upload(params, options);
@@ -142,7 +113,7 @@ const multiUpload = async({currentUserInfo, currentUserCredentials}) => {
 					reject(err);
 				} else {
 					console.log("Uploaded the file at", data.Location);		
-					resolve({ objKey, fileKey, fileName: filePath, user: currentUserInfo.username });
+					resolve({ objKey, fileKey, fileName: filePath, user: username });
 				}
 			});
 	    });
@@ -199,8 +170,7 @@ const saveUploadJob = async ({objKey, fileKey, fileName, user}) => {
   	return { fileKey, data: rtn };
 }
 
-proceedAuth()
-	.then(loadAuthenticationInfo)
+initiateCognitoAuth()
 	.then(multiUpload)
 	.then(saveUploadJob)
 	.catch(e => console.error(e));
