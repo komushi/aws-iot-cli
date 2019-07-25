@@ -54,8 +54,24 @@ const createUploadJob = `mutation CreateUploadJob($input: CreateUploadJob!) {
 }
 `;
 
+const checkCredentials = async () => {
+	return new Promise((resolve, reject) => {
+	    AWS.config.credentials.get(() => {
+	    	const result = {
+	    		accessKeyId: AWS.config.credentials.accessKeyId,
+	    		secretAccessKey: AWS.config.credentials.secretAccessKey,
+	    		sessionToken: AWS.config.credentials.sessionToken
+	    	};
+
+	    	console.log(result)
+
+	    	resolve(result);
+	    });
+	});
+}
 
 const proceedAuth = async () => {
+
 	const Auth = Amplify.Auth;
 	const rtn = await Auth.signIn(username, password).catch((err) => {
 	  // console.log(err);
@@ -71,27 +87,34 @@ const loadAuthenticationInfo = async() => {
 	const Auth = Amplify.Auth;
 
 	const [
-	  currentAuthenticatedUser, 
-	  currentUserInfo, 
+	  // currentAuthenticatedUser,
+	  currentUserInfo,
+	  currentUserCredentials,
 	] = 
 	  await Promise.all([
-	    Auth.currentAuthenticatedUser(), 
+	    // Auth.currentAuthenticatedUser(), 
 	    Auth.currentUserInfo(),
+	    Auth.currentUserCredentials()
 	  ]);
 
-	console.log('currentAuthenticatedUser', JSON.stringify(currentAuthenticatedUser));
+	// console.log('currentAuthenticatedUser', JSON.stringify(currentAuthenticatedUser));
+	// console.log('currentUserCredentials', JSON.stringify(currentUserCredentials));
 	
 	console.log('***** Begin currentUserInfo *****');
 	console.log(JSON.stringify(currentUserInfo));
 	console.log('***** End currentUserInfo *****');
 
-	return currentUserInfo;
+	AWS.config = new AWS.Config({
+	  credentials: currentUserCredentials, region: aws_exports.aws_cognito_region
+	});
+
+
+	return {currentUserInfo, currentUserCredentials};
 
 }
 
-const multiUpload = async(currentUserInfo) => {
+const multiUpload = async({currentUserInfo, currentUserCredentials}) => {
 
-	const API = Amplify.API;
 	const graphqlOperation = Amplify.graphqlOperation;
 	const uid = new ShortUniqueId();
 
@@ -100,12 +123,20 @@ const multiUpload = async(currentUserInfo) => {
 	const objKey = `protected/${currentUserInfo.attributes['profile']}/${fileKey}`;
 	const bucket = aws_exports.aws_user_files_s3_bucket;
 
-    const fileStream = fs.createReadStream(__dirname + filePath).pipe(zlib.createGzip());
+	// const fileStream = fs.createReadStream(__dirname + filePath).pipe(zlib.createGzip());
+    const fileStream = fs.createReadStream(__dirname + filePath);
+   
 
-	const s3obj = new AWS.S3({params: {Bucket: bucket, Key: objKey}});
+	const params = {Bucket: bucket, Key: objKey, Body: fileStream};
+	const options = {partSize: 10 * 1024 * 1024, queueSize: 1};
+
+	const s3 = new AWS.S3({apiVersion: '2006-03-01'});
+	const s3upload = s3.upload(params, options);
+
+	s3upload.on('httpUploadProgress', evt => { console.log('httpUploadProgress', evt) });
 
 	return new Promise((resolve, reject) => {
-			s3obj.upload({Body: fileStream}, function(err, data) {
+			s3upload.send((err, data) => {
 				if (err) {
 					console.log("An error occurred", err);
 					reject(err);
@@ -115,6 +146,29 @@ const multiUpload = async(currentUserInfo) => {
 				}
 			});
 	    });
+
+
+	// const response = await s3.upload(params, options, (err, data) => {
+	// 	if (err) {
+	// 		console.log("An error occurred", err);
+	// 	} else {
+	// 		console.log("Uploaded the file at", data.Location);		
+	// 	}
+	// }).promise();
+	// console.log('response', response);
+	// return { objKey, fileKey, fileName: filePath, user: currentUserInfo.username };
+
+	// return new Promise((resolve, reject) => {
+	// 		s3.upload(params, options, (err, data) => {
+	// 			if (err) {
+	// 				console.log("An error occurred", err);
+	// 				reject(err);
+	// 			} else {
+	// 				console.log("Uploaded the file at", data.Location);		
+	// 				resolve({ objKey, fileKey, fileName: filePath, user: currentUserInfo.username });
+	// 			}
+	// 		});
+	//     });
 }
 
 const saveUploadJob = async ({objKey, fileKey, fileName, user}) => {
