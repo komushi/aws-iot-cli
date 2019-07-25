@@ -7,3 +7,5 @@ jspm_packages
 
 aws-exports.js
 aws-exports-host.js
+
+*.mp4

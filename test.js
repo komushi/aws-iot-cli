@@ -92,8 +92,21 @@ const getCognitoIdentityId = async () => {
 	});
 }
 
+const extractCredentials = async () => {
+	return new Promise((resolve, reject) => {
+	    AWS.config.credentials.get(() => {
+	    	resolve({
+	    		accessKeyId: AWS.config.credentials.accessKeyId,
+	    		secretAccessKey: AWS.config.credentials.secretAccessKey,
+	    		sessionToken: AWS.config.credentials.sessionToken
+	    	});
+	    });
+	});
+}
+
 proceedCognitoUserPoolAuth()
 	.then(getCognitoUserSession)
 	.then(getCognitoIdentityId)
+	.then(extractCredentials)
 	.then(console.log)
 	.catch(e => console.error(e));
