@@ -9,3 +9,5 @@ aws-exports.js
 aws-exports-host.js
 
 *.mp4
+
+amplify-config

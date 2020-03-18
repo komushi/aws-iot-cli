@@ -1,173 +1,153 @@
-const username = 'xulei';
-const password = 'pa55word';
-const filePath = '/screenshot.png';
+#!/usr/bin/env node
 
-// require('isomorphic-fetch');
-const aws_exports = require('./aws-exports').getConfig();
-const Amplify = require('aws-amplify');
-const ShortUniqueId = require('short-unique-id');
 const fs = require('fs');
-const filetype = require('file-type');
-const axios = require('axios');
+const yargs = require('yargs');
+const iotworker = require('./iotworker');
+const configer = require('./configer');
 
-global.fetch = require('node-fetch');
-global.navigator = {};
+yargs
+  .scriptName("iotcognito")
+  .usage('$0 <cmd> [args]')
+  .command('signup', '',
+    (yargs) => {
+      yargs.option('key', {
+        type: 'string',
+        alias: 'k',
+        default: 'default',
+        describe: 'the key of the config'
+      })
+      .option('usr', {
+        type: 'string',
+        alias: 'u',
+        describe: 'Cognito Userpool Username'
+      })
+      .option('pwd', {
+        type: 'string',
+        alias: 'p',
+        describe: 'Cognito Userpool User Password'
+      })
+      .option('email', {
+        type: 'string',
+        alias: 'e',
+        describe: 'Cognito Userpool User Email'
+      })
+    },
+    (argv) => {
+      const config = configer.readConfig(argv.key);
 
+      configer.signUp({
+        username: argv.usr,
+        password: argv.pwd,
+        email: argv.email,
+      }, config); 
 
-Amplify.default.configure(aws_exports);
-Amplify.Storage.configure({ level: 'protected' });
+    }
+  )
+  .example('$0 signup --usr user --pwd pass --email abc@example.com --key default', '')
+  .command('confirm', '',
+    (yargs) => {
+      yargs.option('key', {
+        type: 'string',
+        alias: 'k',
+        default: 'default',
+        describe: 'the key of the config'
+      })
+      .option('usr', {
+        type: 'string',
+        alias: 'u',
+        describe: 'Cognito Userpool Username'
+      })
+      .option('code', {
+        type: 'string',
+        alias: 'c',
+        describe: 'Cognito Userpool User Confirmation Code'
+      })
+    },
+    (argv) => {
+      const config = configer.readConfig(argv.key);
 
+      configer.confirmSignUp({
+        username: argv.usr,
+        code: argv.code,
+      }, config); 
 
-// Amplify.default.configure({
-//     Auth: {
-//         identityPoolId: aws_exports.aws_cognito_identity_pool_id,
-//         region: aws_exports.aws_cognito_region,
-//         userPoolId: aws_exports.aws_user_pools_id,
-//         userPoolWebClientId: aws_exports.aws_user_pools_web_client_id,
-//     },
-// 	aws_appsync_graphqlEndpoint: aws_exports.aws_appsync_graphqlEndpoint,
-// 	aws_appsync_region: aws_exports.aws_appsync_region,
-// 	aws_appsync_authenticationType: aws_exports.aws_appsync_authenticationType,
-// 	aws_appsync_apiKey: aws_exports.aws_appsync_apiKey,
-//     Storage: {
-//         AWSS3: {
-//             bucket: aws_exports.aws_user_files_s3_bucket,
-//             region: aws_exports.aws_user_files_s3_bucket_region
-//         }
-//     }
-// });
+    }
+  )
+  .example('$0 confirm --usr user --code 123456 --key default', '')
+  .command('iotwork', '',
+    (yargs) => {
+      yargs.option('key', {
+        type: 'string',
+        alias: 'k',
+        default: 'default',
+        describe: 'the key of the config'
+      })
+      .option('usr', {
+        type: 'string',
+        alias: 'u',
+        describe: 'Cognito Userpool Username'
+      })
+      .option('pwd', {
+        type: 'string',
+        alias: 'p',
+        describe: 'Cognito Userpool User Password'
+      })
+    },
+    (argv) => {
+      const config = configer.readConfig(argv.key);
 
-// Amplify.Storage.configure({ level: 'protected' });
-
-
-
-const createUploadJob = `mutation CreateUploadJob($input: CreateUploadJob!) {
-  createUploadJob(input: $input) {
-    user
-    objKey
-    fileKey
-    fileName
-    status
-    uploadedOn
-  }
-}
-`;
-
-const getPutObjectSignedUrl = `query GetPutObjectSignedUrl($input: GetPutObjectSignedUrl!) {
-  getPutObjectSignedUrl(input: $input) {
-    url
-  }
-}
-`;
-
-
-const proceedAuth = async () => {
-	const Auth = Amplify.Auth;
-	const rtn = await Auth.signIn(username, password).catch((err) => {
-	  // console.log(err);
-	  throw err;
-	});
-
-	// console.log('proceedAuth rtn', rtn);
-	return rtn;
-}
-
-const loadAuthenticationInfo = async() => {
-
-	const Auth = Amplify.Auth;
-
-	const [
-	  currentAuthenticatedUser, 
-	  currentUserInfo, 
-	] = 
-	  await Promise.all([
-	    Auth.currentAuthenticatedUser(), 
-	    Auth.currentUserInfo(),
-	  ]);
-
-	console.log('currentAuthenticatedUser', JSON.stringify(currentAuthenticatedUser));
-	
-	console.log('***** Begin currentUserInfo *****');
-	console.log(JSON.stringify(currentUserInfo));
-	console.log('***** End currentUserInfo *****');
-
-	return currentUserInfo;
-
-}
-
-const uploadWithSignedUrl = async(currentUserInfo) => {
-
-	const API = Amplify.API;
-	const graphqlOperation = Amplify.graphqlOperation;
-	const uid = new ShortUniqueId();
-
-	const fileKey = uid.randomUUID(6);
-	// const objKey = `protected/${currentUserInfo.attributes['custom:identity_id']}/${fileKey}`;
-	const objKey = `protected/${currentUserInfo.attributes['profile']}/${fileKey}`;
-	const bucket = aws_exports.aws_user_files_s3_bucket;
-
-    const fileContents = fs.readFileSync(__dirname + filePath);
-    const contentType = filetype(fileContents).mime;
-
-    console.log('***** Begin contentType *****');
-    console.log(contentType);
-    console.log('***** End contentType *****');
-
-	const input = {
-	    bucket,
-	    objKey,
-	    contentType
-	};
-
-    const presignedUrlRtn = await API.graphql(graphqlOperation(getPutObjectSignedUrl, { input }))
-      .catch(e => {
-        throw e;
-      });
-
-  	console.log('***** Begin presignedUrl *****');
-    console.log(presignedUrlRtn.data.getPutObjectSignedUrl.url);
-    console.log('***** End presignedUrl *****');
-
-	const axiosRtn = await axios.put(
-		presignedUrlRtn.data.getPutObjectSignedUrl.url,
-		fileContents,
-		{ headers: { 'Content-Type': contentType } }
-	)
-  	
-  	return { objKey, fileKey, fileName: filePath, user: currentUserInfo.username };
-}
-
-const saveUploadJob = async ({objKey, fileKey, fileName, user}) => {
-
-	const API = Amplify.API;
-	const graphqlOperation = Amplify.graphqlOperation;
-
-	const input = {
-	    user,
-	    objKey,
-	    fileKey,
-	    fileName,
-	    status: 'Done',
-	    uploadedOn: new Date().toISOString()
-	};
-
-    const rtn = await API.graphql(graphqlOperation(createUploadJob, { input }))
-      .catch(e => {
-        // console.error('createUploadJob', e);
-        throw e;
-      });
-
-  	// console.log('saveUploadJob rtn', rtn);
-  	console.log('***** Begin createUploadJob *****');
-    console.log(rtn);
-    console.log('***** End createUploadJob *****');
-
-  	return { fileKey, data: rtn };
-}
-
-proceedAuth()
-	.then(loadAuthenticationInfo)
-	.then(uploadWithSignedUrl)
-	.then(saveUploadJob)
-	.catch(e => console.error(e));
-
+      if (argv.usr && argv.pwd) {
+        iotworker.iotwork({
+          username: argv.usr,
+          password: argv.pwd
+        }, config);        
+      } else {
+        iotworker.iotwork({
+          username: config.usr,
+          password: config.pwd
+        }, config); 
+      }
+    }
+  )
+  .example('$0 iotwork --usr user --pwd pass', '')
+  .example('$0 iotwork --key default', '')
+  .command(
+    'config',
+    '',
+    (yargs) => {
+      yargs.option('set', {
+        type: 'string',
+        alias: 's',
+        describe: 'the config json'
+      })
+      .option('key', {
+        type: 'string',
+        alias: 'k',
+        default: 'default',
+        describe: 'the key of the config'
+      })
+      .option('usr', {
+        type: 'string',
+        alias: 'u',
+        describe: 'Cognito Userpool Username'
+      })
+      .option('pwd', {
+        type: 'string',
+        alias: 'p',
+        describe: 'Cognito Userpool User Password'
+      })
+    },
+    (argv) => {
+      console.log('config', argv);
+      configer.saveConfig(argv);
+    }
+  )
+  .example('$0 config --set aws-exports.json', '')
+  .example('$0 config --set aws-exports.json --key default --usr user --pwd pass', '')
+  .config('set', 'configuration', function (configPath) {
+    const configJson = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    return configJson;
+  })
+  .version()
+  .help()
+  .argv;
