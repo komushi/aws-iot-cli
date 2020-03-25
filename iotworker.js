@@ -4,13 +4,15 @@ const Auth = Amplify.Auth;
 const PubSub = Amplify.PubSub;
 const { AWSIoTProvider } = require('@aws-amplify/pubsub/lib/Providers');
 
-Amplify.default.addPluggable(new AWSIoTProvider());
+// Amplify.default.addPluggable(new AWSIoTProvider());
 
 global.fetch = require('node-fetch');
 global.navigator = {};
 global.WebSocket = require('ws');
 
-const publish = async() => {
+let iotProvider;
+
+const publish = async(topic) => {
 	
 	// Amplify.addPluggable(new AWSIoTProvider({
 	// 	aws_pubsub_region: '<YOUR-IOT-REGION>',
@@ -18,9 +20,9 @@ const publish = async() => {
  //   }));	
 
     try {
-        await PubSub.publish('myTopic1', { msg: 'Hello to all subscribers!' });
+        await PubSub.publish(topic + '/group1', { msg: 'Hello to all subscribers!' });
     } catch (e) {
-        console.error(e);
+        console.error('publish', e);
     } finally {
         console.log('We do cleanup here');
     }
@@ -79,14 +81,21 @@ module.exports.iotwork = async ({username, password}, config) => {
 	const authResult = await initiateCognitoAuth(username, password, config.aws_cognito_region).catch(e => {
 		console.error('Authentication Failure!');
 		console.error(e);
+		return;
 	});
+
+	// console.log(Amplify.PubSub.AWSIoTProvider);
 
 	if (!authResult) {
 		return;
 	}
 	
-	// await checkCredentials();
+	if (!iotProvider) {
+		iotProvider = new AWSIoTProvider({
+			clientId: authResult.identityId
+		});
+		Amplify.default.addPluggable(iotProvider);
+	}
 
-	await publish();
-
+	return await publish(authResult.identityId);
 }
