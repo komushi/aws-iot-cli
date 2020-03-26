@@ -109,8 +109,8 @@ yargs
       }
     }
   )
-  .example('$0 sub --usr user --pwd pass', '')
-  .example('$0 sub --key default', '')
+  .example('$0 sub -u user -p pass -k default', '')
+  .example('$0 sub -k default', '')
   .command('pub', '',
     (yargs) => {
       yargs.option('key', {
@@ -129,9 +129,14 @@ yargs
         alias: 'p',
         describe: 'Cognito Userpool User Password'
       })
+      .option('room', {
+        type: 'string',
+        alias: 'r',
+        describe: 'Room to publish to'
+      })  
       .option('msg', {
         type: 'string',
-        alias: 'p',
+        alias: 'm',
         describe: 'Message to publish'
       })      
     },
@@ -142,6 +147,7 @@ yargs
         iotworker.pub({
           username: argv.usr,
           password: argv.pwd,
+          room: argv.room,
           msg: argv.msg
         }, config).then(result => {
           console.log('pub:', result);
@@ -152,6 +158,7 @@ yargs
         iotworker.pub({
           username: config.usr,
           password: config.pwd,
+          room: argv.room,
           msg: argv.msg
         }, config).then(result => {
           console.log('pub:', result);
@@ -160,8 +167,8 @@ yargs
       }
     }
   )
-  .example('$0 pub --usr user --pwd pass --msg msg', '')
-  .example('$0 pub --key default', '')
+  .example('$0 pub -u user -p pass -r myroom -m msg -k default', '')
+  .example('$0 pub -r myroom -m msg -k default', '')
   .command(
     'config',
     '',
