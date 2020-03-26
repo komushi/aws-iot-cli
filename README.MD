@@ -57,6 +57,10 @@ aws iot attach-policy --policy-name 'iotFullAccess' --target 'ap-northeast-1:bbe
 aws iot attach-policy --policy-name 'iotFullAccess' --target 'ap-northeast-1:c24b54ff-a8d3-4410-81bd-b056b638aa83'
 
 aws iot attach-policy --policy-name 'iotFullAccess' --target 'ap-northeast-1:bf008779-c161-4812-8d90-01d7614acc22'
+
+aws iot attach-policy --policy-name 'iotFullAccess' --target 'ap-northeast-1:9b8de7cb-b4df-47fd-bac3-19eb84d2baad'
+
+
 ```
 
 ```
@@ -79,8 +83,54 @@ aws iot attach-policy --policy-name 'iotFullAccess' --target 'ap-northeast-1:bf0
       ],
       "Resource": [
         "arn:aws:iot:ap-northeast-1:801701848198:client/${cognito-identity.amazonaws.com:sub}"
-      ]
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iot:ClientId": "${cognito-identity.amazonaws.com:sub}"
+        }
+      }      
     }
+  ]
+}
+```
+
+```
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Publish",
+        "iot:Receive"        
+      ],
+      "Resource": [
+        "arn:aws:iot:ap-northeast-1:801701848198:topic/${cognito-identity.amazonaws.com:aud}/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Subscribe"
+      ],
+      "Resource": [
+        "arn:aws:iot:ap-northeast-1:801701848198:topicfilter/${cognito-identity.amazonaws.com:aud}/*"
+      ]
+    },    
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iot:Connect"
+      ],
+      "Resource": [
+        "arn:aws:iot:ap-northeast-1:801701848198:client/${cognito-identity.amazonaws.com:sub}"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iot:ClientId": "${cognito-identity.amazonaws.com:sub}"
+        }
+      }
+    }   
   ]
 }
 ```

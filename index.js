@@ -6,7 +6,7 @@ const iotworker = require('./iotworker');
 const configer = require('./configer');
 
 yargs
-  .scriptName("iotcognito")
+  .scriptName("aws-iot")
   .usage('$0 <cmd> [args]')
   .command('signup', '',
     (yargs) => {
@@ -74,7 +74,7 @@ yargs
     }
   )
   .example('$0 confirm --usr user --code 123456 --key default', '')
-  .command('iotwork', '',
+  .command('sub', '',
     (yargs) => {
       yargs.option('key', {
         type: 'string',
@@ -97,20 +97,71 @@ yargs
       const config = configer.readConfig(argv.key);
 
       if (argv.usr && argv.pwd) {
-        iotworker.iotwork({
+        iotworker.sub({
           username: argv.usr,
           password: argv.pwd
         }, config);        
       } else {
-        iotworker.iotwork({
+        iotworker.sub({
           username: config.usr,
           password: config.pwd
         }, config); 
       }
     }
   )
-  .example('$0 iotwork --usr user --pwd pass', '')
-  .example('$0 iotwork --key default', '')
+  .example('$0 sub --usr user --pwd pass', '')
+  .example('$0 sub --key default', '')
+  .command('pub', '',
+    (yargs) => {
+      yargs.option('key', {
+        type: 'string',
+        alias: 'k',
+        default: 'default',
+        describe: 'the key of the config'
+      })
+      .option('usr', {
+        type: 'string',
+        alias: 'u',
+        describe: 'Cognito Userpool Username'
+      })
+      .option('pwd', {
+        type: 'string',
+        alias: 'p',
+        describe: 'Cognito Userpool User Password'
+      })
+      .option('msg', {
+        type: 'string',
+        alias: 'p',
+        describe: 'Message to publish'
+      })      
+    },
+    (argv) => {
+      const config = configer.readConfig(argv.key);
+
+      if (argv.usr && argv.pwd) {
+        iotworker.pub({
+          username: argv.usr,
+          password: argv.pwd,
+          msg: argv.msg
+        }, config).then(result => {
+          console.log('pub:', result);
+          process.exit();
+        })
+
+      } else {
+        iotworker.pub({
+          username: config.usr,
+          password: config.pwd,
+          msg: argv.msg
+        }, config).then(result => {
+          console.log('pub:', result);
+          process.exit();
+        }); 
+      }
+    }
+  )
+  .example('$0 pub --usr user --pwd pass --msg msg', '')
+  .example('$0 pub --key default', '')
   .command(
     'config',
     '',

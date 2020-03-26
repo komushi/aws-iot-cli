@@ -1,6 +1,6 @@
 {
   "name": "aws-iot-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -17,6 +17,6 @@
     "yargs": "^14.2.0"
   },
   "bin": {
-    "iotcognito": "index.js"
+    "aws-iot": "index.js"
   }
 }
