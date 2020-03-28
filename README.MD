@@ -40,11 +40,11 @@ This is the CLI tool to access aws iot with websocket over mqtt.
         "iot:Connect"
       ],
       "Resource": [
-        "arn:aws:iot:ap-northeast-1:801701848198:client/${cognito-identity.amazonaws.com:sub}"
+        "arn:aws:iot:ap-northeast-1:801701848198:client/${cognito-identity.amazonaws.com:sub}*"
       ],
       "Condition": {
-        "StringEquals": {
-          "iot:ClientId": "${cognito-identity.amazonaws.com:sub}"
+        "StringLike": {
+          "iot:ClientId": "${cognito-identity.amazonaws.com:sub}*"
         }
       }
     }   

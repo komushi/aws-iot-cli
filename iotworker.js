@@ -4,7 +4,7 @@ const Auth = Amplify.Auth;
 const PubSub = Amplify.PubSub;
 const { AWSIoTProvider } = require('@aws-amplify/pubsub/lib/Providers');
 
-// Amplify.default.addPluggable(new AWSIoTProvider());
+const shortid = require('shortid');
 
 global.fetch = require('node-fetch');
 global.navigator = {};
@@ -18,6 +18,16 @@ const publish = async(identityPoolId, identityId, room, msg) => {
         // console.error('publish', e);
         return e;
     }
+}
+
+const initiatePubsub = (identityId) => {
+	const clientId = `${identityId}-${shortid.generate()}`;
+
+	const iotProvider = new AWSIoTProvider({
+		clientId: clientId
+	});
+	
+	Amplify.default.addPluggable(iotProvider);
 }
 
 const initiateCognitoAuth = async(username, password, region) => {
@@ -56,17 +66,11 @@ module.exports.pub = async ({username, password, room, msg}, config) => {
 		return;
 	});
 
-	// console.log(Amplify.PubSub.AWSIoTProvider);
-
 	if (!authResult) {
 		return;
 	}
-	
-	const iotProvider = new AWSIoTProvider({
-		clientId: authResult.identityId
-		// clientId: 'ap-northeast-1:76d6f549-28eb-498d-a516-04294235d82c'
-	});
-	Amplify.default.addPluggable(iotProvider);
+
+	initiatePubsub(authResult.identityId);
 
 	return await publish(authResult.identityPoolId, authResult.identityId, room, msg);
 }
@@ -84,21 +88,9 @@ module.exports.sub = async ({username, password}, config) => {
 		return;
 	}
 	
-	const iotProvider = new AWSIoTProvider({
-		clientId: authResult.identityId
-	});
-	Amplify.default.addPluggable(iotProvider);
-
-/*
-	PubSub.subscribe(authResult.identityPoolId + '/room1').subscribe({
-	    next: data => console.log('Message received', data),
-	    error: error => console.error('subscribe error', error),
-	    close: () => console.log('Done'),
-	});
-*/
+	initiatePubsub(authResult.identityId);
 
     try {
-    	console.log('authResult.identityPoolId', authResult.identityPoolId)
 		PubSub.subscribe(`${authResult.identityPoolId}/#`).subscribe({
 		    next: data => console.log('Message received', data.value),
 		    error: error => console.error('subscribe error', error),
