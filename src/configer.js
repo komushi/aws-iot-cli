@@ -41,7 +41,7 @@ module.exports.saveConfig = (argv) => {
 	fs.writeFileSync(configFile, output);	
 }
 
-readAllConfig = () => {
+const readAllConfig = () => {
 	let jsonConfig;
 
 	if (fs.existsSync(configFile)) {

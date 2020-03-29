@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const fs = require('fs');
 const yargs = require('yargs');
 const iotworker = require('./iotworker');
@@ -209,3 +207,4 @@ yargs
   .version()
   .help()
   .argv;
+

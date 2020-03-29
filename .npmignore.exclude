@@ -1,0 +1,15 @@
+# package directories
+node_modules
+jspm_packages
+
+# Serverless directories
+.serverless
+
+aws-exports.js
+aws-exports-host.js
+
+*.mp4
+
+amplify-config
+
+src
