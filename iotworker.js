@@ -1,7 +1,7 @@
-const Amplify = require('aws-amplify');
+const Amplify = require('@aws-amplify/core');
 const AWS = require('aws-sdk');
-const Auth = Amplify.Auth;
-const PubSub = Amplify.PubSub;
+const Auth = require('@aws-amplify/Auth');
+const PubSub = require('@aws-amplify/PubSub');
 const { AWSIoTProvider } = require('@aws-amplify/pubsub/lib/Providers');
 
 const shortid = require('shortid');
@@ -12,7 +12,7 @@ global.WebSocket = require('ws');
 
 const publish = async(identityPoolId, identityId, room, msg) => {
     try {
-        return await PubSub.publish(`${identityPoolId}/${room}/${identityId}`, { msg });
+        return await Amplify.default.PubSub.publish(`${identityPoolId}/${room}/${identityId}`, { msg });
         // await PubSub.publish('ap-northeast-1:76d6f549-28eb-498d-a516-04294235d82c' + '/room1', { msg });
     } catch (e) {
         // console.error('publish', e);
@@ -26,17 +26,16 @@ const initiatePubsub = (identityId) => {
 	const iotProvider = new AWSIoTProvider({
 		clientId: clientId
 	});
-	
+
 	Amplify.default.addPluggable(iotProvider);
 }
 
 const initiateCognitoAuth = async(username, password, region) => {
-
-	await Auth.signIn(username, password);
+	await Amplify.default.Auth.signIn(username, password);
 
 	const [ currentUserInfo, currentUserCredentials] = await Promise.all([
-		Auth.currentUserInfo(),
-		Auth.currentUserCredentials()
+		Amplify.default.Auth.currentUserInfo(),
+		Amplify.default.Auth.currentUserCredentials()
 	]);
 	
 
@@ -91,7 +90,7 @@ module.exports.sub = async ({username, password}, config) => {
 	initiatePubsub(authResult.identityId);
 
     try {
-		PubSub.subscribe(`${authResult.identityPoolId}/#`).subscribe({
+		Amplify.default.PubSub.subscribe(`${authResult.identityPoolId}/#`).subscribe({
 		    next: data => console.log('Message received', data.value),
 		    error: error => console.error('subscribe error', error),
 		    close: () => console.log('Done'),

@@ -1,4 +1,6 @@
-const Amplify = require('aws-amplify');
+const Amplify = require('@aws-amplify/core');
+const Auth = require('@aws-amplify/Auth');
+
 global.fetch = require('node-fetch');
 
 const fs = require('fs');
@@ -67,9 +69,7 @@ module.exports.signUp = async ({username, password, email}, config) => {
 module.exports.confirmSignUp = async ({username, code}, config) => {
 	configureAmplify(config);
 
-	const Auth = Amplify.Auth;
-
-	Auth.confirmSignUp(username, code, {
+	Amplify.default.Auth.confirmSignUp(username, code, {
 	    forceAliasCreation: true    
 	})
 	.then(data => console.log(data))
@@ -84,9 +84,7 @@ const signUp = async(username, password, email) => {
   	console.log('username', username)
   	console.log('password', password)	
 
-	const Auth = Amplify.Auth;
-
-	const rtn = await Auth.signUp({
+	const rtn = await Amplify.default.Auth.signUp({
 		username: username,
 		password: password,
 	    attributes: {
