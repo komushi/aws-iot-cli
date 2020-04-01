@@ -12,7 +12,6 @@ const configFile = path.join(os.homedir(), filename);
 
 module.exports.readConfig = (key) => {
 	const jsonConfig = readAllConfig();
-
 	return jsonConfig[key];
 }
 

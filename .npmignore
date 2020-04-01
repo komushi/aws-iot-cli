@@ -5,11 +5,12 @@ jspm_packages
 # Serverless directories
 .serverless
 
-aws-exports.js
-aws-exports-host.js
-
-*.mp4
+aws-exports.json
 
 amplify-config
 
 src
+rollup.config.js
+DEV.MD
+
+.cjsescache

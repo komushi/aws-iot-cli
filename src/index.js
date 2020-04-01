@@ -194,7 +194,6 @@ yargs
       })
     },
     (argv) => {
-      console.log('config', argv);
       configer.saveConfig(argv);
     }
   )
