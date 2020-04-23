@@ -2,6 +2,7 @@ const fs = require('fs');
 const yargs = require('yargs');
 const iotworker = require('./iotworker');
 const configer = require('./configer');
+const authorizer = require('./authorizer');
 
 yargs
   .scriptName("aws-iot")
@@ -33,7 +34,7 @@ yargs
     (argv) => {
       const config = configer.readConfig(argv.key);
 
-      configer.signUp({
+      authorizer.signUp({
         username: argv.usr,
         password: argv.pwd,
         email: argv.email,
@@ -64,7 +65,7 @@ yargs
     (argv) => {
       const config = configer.readConfig(argv.key);
 
-      configer.confirmSignUp({
+      authorizer.confirmSignUp({
         username: argv.usr,
         code: argv.code,
       }, config); 
@@ -95,15 +96,27 @@ yargs
       const config = configer.readConfig(argv.key);
 
       if (argv.usr && argv.pwd) {
-        iotworker.sub({
+        authorizer.signIn({
           username: argv.usr,
-          password: argv.pwd
-        }, config);        
+          password: argv.pwd,
+        }, config)
+        .then(currentUserCredentials => {
+          return iotworker.sub(currentUserCredentials)         
+        })
+        .catch(err => {
+          console.error(err)
+        })         
       } else {
-        iotworker.sub({
+        authorizer.signIn({
           username: config.usr,
-          password: config.pwd
-        }, config); 
+          password: config.pwd,
+        }, config)
+        .then(currentUserCredentials => {
+          return iotworker.sub(currentUserCredentials)         
+        })
+        .catch(err => {
+          console.error(err)
+        }) 
       }
     }
   )
@@ -142,26 +155,42 @@ yargs
       const config = configer.readConfig(argv.key);
 
       if (argv.usr && argv.pwd) {
-        iotworker.pub({
+        authorizer.signIn({
           username: argv.usr,
           password: argv.pwd,
-          room: argv.room,
-          msg: argv.msg
-        }, config).then(result => {
-          console.log('pub:', result);
-          process.exit();
+        }, config)
+        .then(currentUserCredentials => {
+          return iotworker.pub({
+            room: argv.room,
+            msg: argv.msg
+          }, currentUserCredentials)         
         })
+        .then(result => {
+            console.log('pub:', result)
+            process.exit()
+        })
+        .catch(err => {
+          console.error(err)
+        })        
 
       } else {
-        iotworker.pub({
+        authorizer.signIn({
           username: config.usr,
           password: config.pwd,
-          room: argv.room,
-          msg: argv.msg
-        }, config).then(result => {
-          console.log('pub:', result);
-          process.exit();
-        }); 
+        }, config)
+        .then(currentUserCredentials => {
+          return iotworker.pub({
+            room: argv.room,
+            msg: argv.msg
+          }, currentUserCredentials)
+        })
+        .then(result => {
+            console.log('pub:', result)
+            process.exit()
+        })        
+        .catch(err => {
+          console.error(err)
+        })
       }
     }
   )
