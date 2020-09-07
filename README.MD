@@ -1,8 +1,8 @@
 # aws-iot-cli
-This is the CLI tool to access aws iot with websocket over mqtt.
+This is the chatroom-like CLI tool to access aws iot with websocket over mqtt. Credentials managed by Cognito User Pool.
 
 ## 1. Backend Preparation
-### 1-1. Create an identity pool IAM role with this policy, Create an IoT Policy <mypolicy> with this policy
+### 1-1. Create an identity pool IAM role with this policy, Create an IoT Policy <mypolicy> with this policy example, use your own region and account number.
 ```
 {
   "Version": "2012-10-17",
@@ -13,7 +13,7 @@ This is the CLI tool to access aws iot with websocket over mqtt.
         "iot:Publish"      
       ],
       "Resource": [
-        "arn:aws:iot:ap-northeast-1:801701848198:topic/${cognito-identity.amazonaws.com:aud}/*/${cognito-identity.amazonaws.com:sub}"
+        "arn:aws:iot:<region>:<account>:topic/${cognito-identity.amazonaws.com:aud}/*/${cognito-identity.amazonaws.com:sub}"
       ]
     },
     {
@@ -22,7 +22,7 @@ This is the CLI tool to access aws iot with websocket over mqtt.
         "iot:Subscribe"
       ],
       "Resource": [
-        "arn:aws:iot:ap-northeast-1:801701848198:topicfilter/${cognito-identity.amazonaws.com:aud}/*"
+        "arn:aws:iot:<region>:<account>:topicfilter/${cognito-identity.amazonaws.com:aud}/*"
       ]
     },
     {
@@ -31,7 +31,7 @@ This is the CLI tool to access aws iot with websocket over mqtt.
         "iot:Receive"      
       ],
       "Resource": [
-        "arn:aws:iot:ap-northeast-1:801701848198:topic/${cognito-identity.amazonaws.com:aud}/*"
+        "arn:aws:iot:<region>:<account>:topic/${cognito-identity.amazonaws.com:aud}/*"
       ]
     },    
     {
@@ -40,7 +40,7 @@ This is the CLI tool to access aws iot with websocket over mqtt.
         "iot:Connect"
       ],
       "Resource": [
-        "arn:aws:iot:ap-northeast-1:801701848198:client/${cognito-identity.amazonaws.com:sub}*"
+        "arn:aws:iot:<region>:<account>:client/${cognito-identity.amazonaws.com:sub}*"
       ],
       "Condition": {
         "StringLike": {
@@ -53,7 +53,7 @@ This is the CLI tool to access aws iot with websocket over mqtt.
 ```
 ### 1-2. Prepare cognito userpool, identity pool, authenticated role
 
-### 1-3. Prepare aws-exports.json
+### 1-3. Prepare aws-exports.json, below is an example. Please replace with your own values.
 ```
 {
   "aws_project_region": "ap-northeast-1",
