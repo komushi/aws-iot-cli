@@ -19,7 +19,7 @@
     "@aws-amplify/auth": "2.1.8",
     "@aws-amplify/pubsub": "2.1.9",
     "@aws-amplify/core": "2.3.0 ",
-    "node-fetch": "2.6.0",
+    "node-fetch": "2.6.1",
     "shortid": "2.2.15",
     "ws": "7.2.3",
     "yargs": "14.2.0"
